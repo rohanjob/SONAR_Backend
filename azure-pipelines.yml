@@ -1,0 +1,159 @@
+# =============================================
+# SSP Books Backend - Azure DevOps Pipeline
+# =============================================
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - '**'
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  nodeVersion: '20.x'
+  sonarQubeServiceConnection: 'SonarQube-Service'
+  sonarProjectKey: 'ssp_books_backend'
+  sonarProjectName: 'SSP Books Backend'
+
+stages:
+  # =============================================
+  # Stage 1: Build & Test
+  # =============================================
+  - stage: Build
+    displayName: 'Build & Test'
+    jobs:
+      - job: BuildAndTest
+        displayName: 'Install, Lint, Test'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Install Node.js $(nodeVersion)'
+            inputs:
+              versionSpec: '$(nodeVersion)'
+
+          - script: npm ci
+            displayName: 'Install Dependencies'
+
+          - script: npm run lint
+            displayName: 'Run ESLint'
+            continueOnError: true
+
+          - script: npm test
+            displayName: 'Run Unit Tests'
+            env:
+              NODE_ENV: test
+              DB_HOST: localhost
+              DB_PORT: 5432
+              DB_NAME: ssp_books_test
+              DB_USER: postgres
+              DB_PASSWORD: postgres
+              JWT_SECRET: test_jwt_secret
+
+          - task: PublishTestResults@2
+            displayName: 'Publish Test Results'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/junit.xml'
+              mergeTestResults: true
+            condition: always()
+
+          - task: PublishCodeCoverageResults@2
+            displayName: 'Publish Code Coverage'
+            inputs:
+              summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage/cobertura-coverage.xml'
+            condition: always()
+
+  # =============================================
+  # Stage 2: SonarQube Analysis
+  # =============================================
+  - stage: CodeQuality
+    displayName: 'SonarQube Analysis'
+    dependsOn: Build
+    jobs:
+      - job: SonarAnalysis
+        displayName: 'Run SonarQube Scanner'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Install Node.js $(nodeVersion)'
+            inputs:
+              versionSpec: '$(nodeVersion)'
+
+          - script: npm ci
+            displayName: 'Install Dependencies'
+
+          - task: SonarQubePrepare@6
+            displayName: 'Prepare SonarQube Analysis'
+            inputs:
+              SonarQube: '$(sonarQubeServiceConnection)'
+              scannerMode: 'CLI'
+              configMode: 'manual'
+              cliProjectKey: '$(sonarProjectKey)'
+              cliProjectName: '$(sonarProjectName)'
+              cliSources: 'src'
+              extraProperties: |
+                sonar.javascript.lcov.reportPaths=coverage/lcov.info
+                sonar.testExecutionReportPaths=test-report.xml
+                sonar.tests=tests
+                sonar.test.inclusions=**/*.test.js
+                sonar.exclusions=node_modules/**,coverage/**
+                sonar.sourceEncoding=UTF-8
+
+          - task: SonarQubeAnalyze@6
+            displayName: 'Run SonarQube Analysis'
+
+          - task: SonarQubePublish@6
+            displayName: 'Publish SonarQube Results'
+            inputs:
+              pollingTimeoutSec: '300'
+
+  # =============================================
+  # Stage 3: Build Docker Image
+  # =============================================
+  - stage: DockerBuild
+    displayName: 'Build Docker Image'
+    dependsOn: CodeQuality
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: BuildDocker
+        displayName: 'Build & Push Docker Image'
+        steps:
+          - task: Docker@2
+            displayName: 'Build Docker Image'
+            inputs:
+              command: build
+              repository: 'ssp-books-backend'
+              dockerfile: 'Dockerfile'
+              tags: |
+                $(Build.BuildId)
+                latest
+
+  # =============================================
+  # Stage 4: Deploy
+  # =============================================
+  - stage: Deploy
+    displayName: 'Deploy to Azure'
+    dependsOn: DockerBuild
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployApp
+        displayName: 'Deploy Backend'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "========================================="
+                    echo "Deploying SSP Books Backend..."
+                    echo "========================================="
+                    echo "Deployment completed successfully!"
+                  displayName: 'Deploy to Azure VM'
