@@ -93,11 +93,11 @@ stages:
           - task: SonarQubePrepare@6
             displayName: 'Prepare SonarQube Analysis'
             inputs:
-              SonarQube: '$(sonarQubeServiceConnection)'
+              SonarQube: 'SonarQube-Service'
               scannerMode: 'CLI'
               configMode: 'manual'
-              cliProjectKey: '$(sonarProjectKey)'
-              cliProjectName: '$(sonarProjectName)'
+              cliProjectKey: 'ssp_books_backend'
+              cliProjectName: 'SSP Books Backend'
               cliSources: 'src'
               extraProperties: |
                 sonar.javascript.lcov.reportPaths=coverage/lcov.info
@@ -106,6 +106,14 @@ stages:
                 sonar.test.inclusions=**/*.test.js
                 sonar.exclusions=node_modules/**,coverage/**
                 sonar.sourceEncoding=UTF-8
+
+          - task: Bash@3
+            displayName: 'Remove branch name for Community Edition'
+            inputs:
+              targetType: 'inline'
+              script: |
+                NEW_PARAMS=$(python3 -c "import os, json; p = json.loads(os.environ.get('SONARQUBE_SCANNER_PARAMS', '{}')); p.pop('sonar.branch.name', None); print(json.dumps(p))")
+                echo "##vso[task.setvariable variable=SONARQUBE_SCANNER_PARAMS]$NEW_PARAMS"
 
           - task: SonarQubeAnalyze@6
             displayName: 'Run SonarQube Analysis'
