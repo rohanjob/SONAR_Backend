@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="11" failures="3" errors="0" time="1.395">
+  <testsuite name="SSP Books API" errors="0" failures="3" skipped="0" timestamp="2026-04-04T11:50:14" time="1.313" tests="11">
+    <testcase classname="SSP Books API GET /api/health should return health status" name="SSP Books API GET /api/health should return health status" time="0.044">
+    </testcase>
+    <testcase classname="SSP Books API GET /api/nonexistent should return 404 for unknown routes" name="SSP Books API GET /api/nonexistent should return 404 for unknown routes" time="0.006">
+    </testcase>
+    <testcase classname="SSP Books API POST /api/auth/register should require name, email, and password" name="SSP Books API POST /api/auth/register should require name, email, and password" time="0.018">
+    </testcase>
+    <testcase classname="SSP Books API POST /api/auth/register should reject short passwords" name="SSP Books API POST /api/auth/register should reject short passwords" time="0.006">
+    </testcase>
+    <testcase classname="SSP Books API POST /api/auth/login should require email and password" name="SSP Books API POST /api/auth/login should require email and password" time="0.006">
+    </testcase>
+    <testcase classname="SSP Books API GET /api/auth/me should require authentication" name="SSP Books API GET /api/auth/me should require authentication" time="0.004">
+    </testcase>
+    <testcase classname="SSP Books API GET /api/courses should return courses list" name="SSP Books API GET /api/courses should return courses list" time="0.043">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 500
+    at Object.toBe (C:\Users\Admin\Music\Sonar\ssp_books_backend\tests\api.test.js:67:30)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)</failure>
+    </testcase>
+    <testcase classname="SSP Books API GET /api/courses/featured should return featured courses" name="SSP Books API GET /api/courses/featured should return featured courses" time="0.011">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 500
+    at Object.toBe (C:\Users\Admin\Music\Sonar\ssp_books_backend\tests\api.test.js:76:30)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)</failure>
+    </testcase>
+    <testcase classname="SSP Books API GET /api/categories should return categories list" name="SSP Books API GET /api/categories should return categories list" time="0.013">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 500
+    at Object.toBe (C:\Users\Admin\Music\Sonar\ssp_books_backend\tests\api.test.js:85:30)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)</failure>
+    </testcase>
+    <testcase classname="SSP Books API GET /api/cart should require authentication" name="SSP Books API GET /api/cart should require authentication" time="0.006">
+    </testcase>
+    <testcase classname="SSP Books API GET /api/orders should require authentication" name="SSP Books API GET /api/orders should require authentication" time="0.003">
+    </testcase>
+  </testsuite>
+</testsuites>
