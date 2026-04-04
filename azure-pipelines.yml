@@ -17,11 +17,11 @@ pr:
       - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  name: 'ShivaRam'
 
 variables:
   nodeVersion: '20.x'
-  sonarQubeServiceConnection: 'SonarQube-Service'
+  sonarQubeServiceConnection: 'SonarQube-B'
   sonarProjectKey: 'ssp_books_backend'
   sonarProjectName: 'SSP Books Backend'
 
@@ -90,7 +90,7 @@ stages:
           - script: npm ci --legacy-peer-deps
             displayName: 'Install Dependencies'
 
-          - task: SonarQubePrepare@6
+          - task: SonarQubePrepare@8
             displayName: 'Prepare SonarQube Analysis'
             inputs:
               SonarQube: 'SonarQube-Service'
@@ -115,10 +115,10 @@ stages:
                 NEW_PARAMS=$(python3 -c "import os, json; p = json.loads(os.environ.get('SONARQUBE_SCANNER_PARAMS', '{}')); p.pop('sonar.branch.name', None); print(json.dumps(p))")
                 echo "##vso[task.setvariable variable=SONARQUBE_SCANNER_PARAMS]$NEW_PARAMS"
 
-          - task: SonarQubeAnalyze@6
+          - task: SonarQubeAnalyze@8
             displayName: 'Run SonarQube Analysis'
 
-          - task: SonarQubePublish@6
+          - task: SonarQubePublish@8
             displayName: 'Publish SonarQube Results'
             inputs:
               pollingTimeoutSec: '300'
