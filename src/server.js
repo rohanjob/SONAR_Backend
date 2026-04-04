@@ -18,6 +18,7 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const PUBLIC_API_URL = process.env.PUBLIC_API_URL || 'http://20.24.192.145:5000/api';
 
 // =============================================
 // Security Middleware
@@ -92,7 +93,7 @@ if (process.env.NODE_ENV !== 'test') {
     ║   📚 SSP Books API Server               ║
     ║   🚀 Running on port ${PORT}              ║
     ║   🌍 Environment: ${(process.env.NODE_ENV || 'development').padEnd(18)}║
-    ║   📡 API: http://localhost:${PORT}/api     ║
+    ║   📡 API: ${PUBLIC_API_URL.padEnd(28)}║
     ║                                          ║
     ╚══════════════════════════════════════════╝
     `);
