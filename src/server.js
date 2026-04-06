@@ -17,6 +17,7 @@ const orderRoutes = require('./routes/orders');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 const app = express();
+const HOST = getEnv('HOST', '0.0.0.0');
 const PORT = getIntEnv('PORT', 5000);
 const PUBLIC_API_URL = getEnv('PUBLIC_API_URL', `http://localhost:${PORT}/api`);
 
@@ -86,7 +87,7 @@ app.use(errorHandler);
 // Start Server
 // =============================================
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(PORT, HOST, () => {
     console.log(`
     ╔══════════════════════════════════════════╗
     ║                                          ║

@@ -13,6 +13,7 @@ COPY src/ ./src/
 
 # Set environment
 ENV NODE_ENV=production
+ENV HOST=0.0.0.0
 ENV PORT=5000
 
 # Expose port
