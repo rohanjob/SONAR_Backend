@@ -45,7 +45,13 @@ npm run dev
 
 See `.env` file for all configuration options.
 
-## 🔄 CI/CD
+## 🛡️ CI/CD & Security
 
-- **Azure Pipelines**: `azure-pipelines.yml`
-- **SonarQube**: `sonar-project.properties`
+This project implements a secure "**Shift-Left**" Azure DevOps CI/CD pipeline:
+
+1. **Build & Test**: Code coverage metrics and linting.
+2. **SonarQube Analysis**: Runs static application security testing (SAST) and enforces quality gates (`sonar-project.properties`).
+3. **Docker Build**: Containerizes the backend API.
+4. **Trivy Scanning**: Analyzes the raw Docker image. Blocks the pipeline if `HIGH` or `CRITICAL` vulnerabilities are found.
+5. **ACR Push**: Dispatches the verified image to Azure Container Registry (`sspbooksacr.azurecr.io/ssp-books-backend`).
+6. **Azure Deployment**: Automates deployment of the container to production.
