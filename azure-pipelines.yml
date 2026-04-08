@@ -21,6 +21,11 @@ pool:
 
 variables:
   nodeVersion: '20.x'
+  dockerRegistryServiceConnection: 'sspbooksacr'
+  imageRepository: 'ssp-books-backend'
+  containerRegistry: 'sspbooksacr.azurecr.io'
+  dockerfilePath: 'Dockerfile'
+  tag: '$(Build.BuildId)'
   sonarQubeServiceConnection: 'SonarQube-B'
   sonarProjectKey: 'ssp_books_backend'
   sonarProjectName: 'SSP Books Backend'
@@ -142,30 +147,95 @@ stages:
   # =============================================
   # Stage 3: Build Docker Image
   # =============================================
-  - stage: DockerBuild
+  - stage: Build
     displayName: 'Build Docker Image'
     dependsOn: CodeQuality
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
-      - job: BuildDocker
-        displayName: 'Build & Push Docker Image'
+      - job: BuildDockerImage
+        displayName: 'Build Docker Image'
         steps:
+          - checkout: self
+
           - task: Docker@2
             displayName: 'Build Docker Image'
             inputs:
               command: build
-              repository: 'ssp-books-backend'
-              dockerfile: 'Dockerfile'
+              repository: '$(imageRepository)'
+              dockerfile: '$(dockerfilePath)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
               tags: |
-                $(Build.BuildId)
+                $(tag)
                 latest
 
   # =============================================
-  # Stage 4: Deploy
+  # Stage 4: Trivy Installation
+  # =============================================
+  - stage: TrivyInstall
+    displayName: 'Trivy Installation'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+    jobs:
+      - job: InstallTrivy
+        displayName: 'Install Trivy Scanner'
+        steps:
+          - script: |
+              echo "Installing Trivy..."
+              sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+              wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+              echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+              sudo apt-get update
+              sudo apt-get install trivy -y
+            displayName: 'Install Trivy'
+
+  # =============================================
+  # Stage 5: Trivy Scanner
+  # =============================================
+  - stage: TrivyScanner
+    displayName: 'Trivy Scanner'
+    dependsOn: TrivyInstall
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+    jobs:
+      - job: ScanImage
+        displayName: 'Scan Docker Image'
+        steps:
+          - script: |
+              echo "Scanning Docker Image..."
+              trivy image --severity HIGH,CRITICAL $(containerRegistry)/$(imageRepository):$(tag)
+            displayName: 'Run Trivy Scan'
+
+  # =============================================
+  # Stage 6: Push Docker Image
+  # =============================================
+  - stage: Push
+    displayName: 'Push Docker Image'
+    dependsOn: TrivyScanner
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+    jobs:
+      - job: PushDockerImage
+        displayName: 'Push Docker Image'
+        steps:
+          - checkout: none
+
+          - task: Docker@2
+            displayName: 'Push Docker Image'
+            inputs:
+              command: push
+              repository: '$(imageRepository)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              tags: |
+                $(tag)
+                latest
+
+  # =============================================
+  # Stage 7: Deploy
   # =============================================
   - stage: Deploy
-    displayName: 'Deploy to Azure'
-    dependsOn: DockerBuild
+    displayName: 'Deploy Backend'
+    dependsOn: Push
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - deployment: DeployApp
